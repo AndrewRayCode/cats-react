@@ -1,0 +1,30 @@
+// http://www.colourlovers.com/palette/932683/Compatible
+
+.container {
+    position:relative;
+}
+
+.wrap {
+    margin:20px auto;
+    width: 500px;
+    height: 375px;
+    border-radius:4px;
+    overflow:hidden;
+    background:#7FC7AF;
+    box-shadow:0 0 10px #3F879F;
+    padding:10px;
+}
+
+.image {
+    position:absolute;
+}
+
+.eye {
+    position:absolute;
+    background:#111521;
+    opacity:0.8;
+    height:10px;
+    width:5px;
+    border-radius:50%;
+}
+
