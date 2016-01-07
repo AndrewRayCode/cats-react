@@ -2,10 +2,10 @@ import React, { Component } from 'react';
 import Draggable from 'react-draggable';
 
 // Spring formula
-const stiffness = 10;
-const damperFactor = 0.05;
-const nodeMass = 1;
-const velocityMax = 1;
+const stiffness = 1;
+const damperFactor = 0.1;
+const nodeMass = 5;
+const velocityMax = 15;
 
 // Potential cats
 const cats = [() => ({
@@ -163,27 +163,40 @@ export default class App extends Component {
         Object.keys( springs ).forEach( ( key ) => {
 
             const spring = springs[ key ];
-            const vectorDiff = {
+
+            // Length always returns a positive number
+            const distanceFromRest = vectorLength2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
-            };
+            });
 
-            const distanceFromRest = vectorLength2d( vectorDiff );
-            const normalVector = normalizeVector2d( vectorDiff );
+            const normalVector = normalizeVector2d({
+                x: spring.position.x - spring.origin.x,
+                y: spring.position.y - spring.origin.y
+            });
 
-            //    F = -k(|x|-d)(x/|x|) - bv
+            // F = -k(|x|-d)(x/|x|) - bv
             const force = {
                 x: -stiffness * distanceFromRest * ( normalVector.x / distanceFromRest ) - damperFactor * spring.velocity.x,
                 y: -stiffness * distanceFromRest * ( normalVector.y / distanceFromRest ) - damperFactor * spring.velocity.y
             };
 
+            // force1X = stiffness * ( distance - spring.length ) * ( norm1.x / distance ) + fieldX - damperFactor * v1.x,
+
+            // our node2 is spring. node1 is origin.
+            // force to apply to node2:
+            // Vector2 F2 = -k * (xAbs - d) * (Vector2.Normalize(node1.p - node2.p) / xAbs) - b * (node2.v - node1.v);
+            
+            // b = coefficient of dampening
+            // d = desired distance of separation
+            
             spring.acceleration = {
                 x: spring.acceleration.x + force.x / nodeMass,
                 y: spring.acceleration.y + force.y / nodeMass
             };
 
         });
-
+ 
         let totalEnergy = 0;
 
         Object.keys( springs ).forEach( ( key ) => {
