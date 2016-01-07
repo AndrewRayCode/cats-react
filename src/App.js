@@ -419,6 +419,7 @@ export default class App extends Component {
 
                             <img
                                 draggable={ false }
+                                onDragStart={ ( event ) => false }
                                 className={ styles.absolute }
                                 src={ snoot.img }
                                 style={{
