@@ -1,11 +1,11 @@
 import React, { Component } from 'react';
-import Draggable, { DraggableCore } from 'react-draggable';
+import Draggable from 'react-draggable';
 
 // Spring formula
 const stiffness = 10;
-const damperFactor = 0.03;
+const damperFactor = 0.05;
 const nodeMass = 1;
-const velocityMax = 20;
+const velocityMax = 1;
 
 // Potential cats
 const cats = [() => ({
@@ -83,6 +83,7 @@ export default class App extends Component {
         this.onAnimate = this.onAnimate.bind( this );
         this.handleDragEnd = this.handleDragEnd.bind( this );
         this.handleDrag = this.handleDrag.bind( this );
+        this.handleDragStart = this.handleDragStart.bind( this );
 
     }
 
@@ -95,6 +96,12 @@ export default class App extends Component {
     componentWillUnmount() {
 
         window.cancelAnimationFrame( this.animationId );
+
+    }
+
+    handleDragStart() {
+
+        this.setState({ springs: null });
 
     }
 
@@ -116,13 +123,13 @@ export default class App extends Component {
             tongueYTravelPercent * originalCoords.eye1.travelDistance
         );
 
-        this.setState({ springs: null, cat });
+        this.setState({ cat, tongueDragPosition: ui.position });
 
     }
 
     handleDragEnd() {
 
-        const { originalCoords, cat } = this.state;
+        const { originalCoords, cat, tongueDragPosition } = this.state;
 
         this.setState({
             dragging: false,
@@ -134,7 +141,7 @@ export default class App extends Component {
                     cat.eye2.left, cat.eye2.top, originalCoords.eye2.left, originalCoords.eye2.top
                 ),
                 tongue: toSpring(
-                    cat.tongue.left, cat.tongue.top, originalCoords.tongue.left, originalCoords.tongue.top
+                    tongueDragPosition.left, tongueDragPosition.top, originalCoords.tongue.left, originalCoords.tongue.top
                 )
             }
         });
@@ -162,7 +169,7 @@ export default class App extends Component {
             };
 
             const distanceFromRest = vectorLength2d( vectorDiff );
-            const normalVector = normalizeVector2d( vectorDiff);
+            const normalVector = normalizeVector2d( vectorDiff );
 
             //    F = -k(|x|-d)(x/|x|) - bv
             const force = {
@@ -176,6 +183,8 @@ export default class App extends Component {
             };
 
         });
+
+        let totalEnergy = 0;
 
         Object.keys( springs ).forEach( ( key ) => {
 
@@ -192,13 +201,15 @@ export default class App extends Component {
 
             spring.position.x += spring.velocity.x;
             spring.position.y += spring.velocity.y;
-            //if( key === 'eye1' ) {
-                //console.log( spring.position.x );
-            //}
+
+            totalEnergy += Math.abs( spring.velocity.x ) + Math.abs( spring.velocity.y );
 
         });
 
-        this.setState({ springs });
+        this.refs.draggable.state.clientX = springs.tongue.position.x;
+        this.refs.draggable.state.clientY = springs.tongue.position.y;
+
+        this.setState({ springs: totalEnergy < 0.01 ? null : springs });
 
     }
 
@@ -217,6 +228,10 @@ export default class App extends Component {
             x: springs ? springs.eye2.position.x : eye2.left,
             y: springs ? springs.eye2.position.y : eye2.top
         };
+        const tonguePos = {
+            x: springs ? springs.tongue.position.x : tongue.left,
+            y: springs ? springs.tongue.position.y : tongue.top
+        };
 
         return <div className={ styles.wrap }>
             <div className={ styles.container }>
@@ -228,9 +243,10 @@ export default class App extends Component {
                 />
 
                 <Draggable
+                    ref="draggable"
                     start={{
-                        x: tongue.left,
-                        y: tongue.top
+                        x: tonguePos.x,
+                        y: tonguePos.y
                     }}
                     bounds={{
                         left: tongue.left - tongue.relativeMovementBounds.left,
@@ -240,6 +256,7 @@ export default class App extends Component {
                     }}
                     onDrag={ this.handleDrag }
                     onStop={ this.handleDragEnd }
+                    onStart={ this.handleDragStart }
                 >
                     <img
                         draggable={ false }
@@ -273,8 +290,8 @@ export default class App extends Component {
                 <div
                     className={ styles.eye }
                     style={{
-                        top: `${ eye2.top }px`,
-                        left: `${ eye2.left }px`,
+                        top: `${ eye2Pos.y }px`,
+                        left: `${ eye2Pos.x }px`,
                         boxShadow: `0 0 2px ${ eye2.color }`
                     }}
                 />
