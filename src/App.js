@@ -353,7 +353,7 @@ export default class App extends Component {
                     </h1>
 
                     <div className={ styles.snoots }>
-                        Pick a derp:
+                        Pick a derp and pull its tongue!
                     </div>
                     <ul className={ styles.catSelector }>
                         { staticCats.map( ( staticCat, index ) => {
