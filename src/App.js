@@ -408,10 +408,10 @@ export default class App extends Component {
                                     onTouchStart={ ( event ) => event.preventDefault() }
                                     onTouchMove={ ( event ) => event.preventDefault() }
                                     draggable={ false }
+                                    onDragStart={ ( event ) => false }
                                     src={ tongue.img }
-                                    className={ styles.noSelect }
+                                    className={ styles.absolute }
                                     style={{
-                                        position: 'absolute',
                                         cursor: 'pointer'
                                     }}
                                 />

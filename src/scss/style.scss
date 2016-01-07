@@ -38,6 +38,9 @@
 }
 
 .absolute {
+    user-drag: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
     position: absolute;
     -moz-user-select: none;
     -webkit-user-select: none;
