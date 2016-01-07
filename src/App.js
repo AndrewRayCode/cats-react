@@ -2,10 +2,11 @@ import React, { Component } from 'react';
 import Draggable from 'react-draggable';
 
 // Spring formula
-const stiffness = 1;
+const stiffness = 2;
 const damperFactor = 0.1;
-const nodeMass = 5;
-const velocityMax = 15;
+const nodeMass = 10;
+const velocityMax = 5;
+const springFrictionFactor = 0.9;
 
 // Potential cats
 const cats = [() => ({
@@ -52,6 +53,10 @@ function normalizeVector2d( vector ) {
 
     const length = vectorLength2d( vector );
 
+    if( !length ) {
+        return { x: 0, y: 0 };
+    }
+
     return {
         x: vector.x / length,
         y: vector.y / length
@@ -59,13 +64,13 @@ function normalizeVector2d( vector ) {
 
 }
 
-function toSpring( x1, y1, x2, y2 ) {
+function toSpring( x1, y1 ) {
 
     return {
         velocity: { x: 0, y: 0 },
         acceleration: { x: 0, y: 0 },
         position: { x: x1, y: y1 },
-        origin: { x: x2, y: y2 }
+        origin: { x: x1, y: y1 }
     };
 
 }
@@ -75,9 +80,15 @@ export default class App extends Component {
     constructor( props ) {
 
         super( props );
+
+        this.isPaused = true;
+        const myCat = cats[ 0 ]();
+
         this.state = {
-            originalCoords: cats[ 0 ](),
-            cat: cats[ 0 ]()
+            cat: myCat,
+            eye1Spring: toSpring( myCat.eye1.left, myCat.eye1.top ),
+            eye2Spring: toSpring( myCat.eye2.left, myCat.eye2.top ),
+            tongueSpring: toSpring( myCat.tongue.left, myCat.tongue.top )
         };
 
         this.onAnimate = this.onAnimate.bind( this );
@@ -101,50 +112,48 @@ export default class App extends Component {
 
     handleDragStart() {
 
-        this.setState({ springs: null });
+        this.isPaused = true;
+        this.dragging = true;
+
+
+        this.state.eye1Spring.acceleration = { x: 0, y: 0 };
+        this.state.eye1Spring.velocity = { x: 0, y: 0 };
+        this.state.eye2Spring.acceleration = { x: 0, y: 0 };
+        this.state.eye2Spring.velocity = { x: 0, y: 0 };
+        this.state.tongueSpring.acceleration = { x: 0, y: 0 };
+        this.state.tongueSpring.velocity = { x: 0, y: 0 };
+        this.setState( this.state );
 
     }
 
     handleDrag( event, ui ) {
 
-        const { originalCoords, cat } = this.state;
+        const { eye1Spring, eye2Spring, tongueSpring, cat } = this.state;
 
         // How far has this tongue traveled, in + or - %, relative to origin?
-        const tongueYTravelPercent = ( ui.position.top - originalCoords.tongue.top ) / (
-            originalCoords.tongue.relativeMovementBounds.top +
-            originalCoords.tongue.relativeMovementBounds.bottom
+        const tongueYTravelPercent = ( ui.position.top - cat.tongue.top ) / (
+            cat.tongue.relativeMovementBounds.top +
+            cat.tongue.relativeMovementBounds.bottom
         );
 
-        cat.eye1.left = originalCoords.eye1.left + (
-            tongueYTravelPercent * originalCoords.eye1.travelDistance
+        eye1Spring.position.x = cat.eye1.left + (
+            tongueYTravelPercent * cat.eye1.travelDistance
         );
 
-        cat.eye2.left = originalCoords.eye2.left - (
-            tongueYTravelPercent * originalCoords.eye1.travelDistance
+        eye2Spring.position.x = cat.eye2.left - (
+            tongueYTravelPercent * cat.eye2.travelDistance
         );
 
-        this.setState({ cat, tongueDragPosition: ui.position });
+        tongueSpring.position.x = ui.position.left;
+        tongueSpring.position.y = ui.position.top;
+
+        this.setState({ cat });
 
     }
 
     handleDragEnd() {
 
-        const { originalCoords, cat, tongueDragPosition } = this.state;
-
-        this.setState({
-            dragging: false,
-            springs: {
-                eye1: toSpring(
-                    cat.eye1.left, cat.eye1.top, originalCoords.eye1.left, originalCoords.eye1.top
-                ),
-                eye2: toSpring(
-                    cat.eye2.left, cat.eye2.top, originalCoords.eye2.left, originalCoords.eye2.top
-                ),
-                tongue: toSpring(
-                    tongueDragPosition.left, tongueDragPosition.top, originalCoords.tongue.left, originalCoords.tongue.top
-                )
-            }
-        });
+        this.isPaused = false;
 
     }
 
@@ -152,13 +161,20 @@ export default class App extends Component {
 
         this.animationId = window.requestAnimationFrame( this.onAnimate );
 
-        if( this.state.dragging || !this.state.springs ) {
+        if( this.isPaused ) {
 
             return;
 
         }
 
-        const { springs } = this.state;
+        const springs = {
+            eye1Spring: this.state.eye1Spring,
+            eye2Spring: this.state.eye2Spring,
+            tongueSpring: this.state.tongueSpring
+        };
+ 
+        let totalEnergy = 0;
+        let totalDistance = 0;
 
         Object.keys( springs ).forEach( ( key ) => {
 
@@ -168,12 +184,14 @@ export default class App extends Component {
             const distanceFromRest = vectorLength2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
-            });
+            }) || 0.0000001;
 
             const normalVector = normalizeVector2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
             });
+
+            totalDistance += distanceFromRest;
 
             // F = -k(|x|-d)(x/|x|) - bv
             const force = {
@@ -196,8 +214,6 @@ export default class App extends Component {
             };
 
         });
- 
-        let totalEnergy = 0;
 
         Object.keys( springs ).forEach( ( key ) => {
 
@@ -206,11 +222,11 @@ export default class App extends Component {
             spring.velocity.x += spring.acceleration.x;
             spring.velocity.y += spring.acceleration.y;
 
-            spring.velocity.x = Math.max( Math.min( spring.velocity.x, velocityMax ), -velocityMax ) * 0.92;
-            spring.velocity.y = Math.max( Math.min( spring.velocity.y, velocityMax ), -velocityMax ) * 0.92;
+            spring.velocity.x = Math.max( Math.min( spring.velocity.x, velocityMax ), -velocityMax ) * springFrictionFactor;
+            spring.velocity.y = Math.max( Math.min( spring.velocity.y, velocityMax ), -velocityMax ) * springFrictionFactor;
 
-            spring.acceleration.x *= 0.5;
-            spring.acceleration.y *= 0.5;
+            spring.acceleration.x *= 0.5 * springFrictionFactor;
+            spring.acceleration.y *= 0.5 * springFrictionFactor;
 
             spring.position.x += spring.velocity.x;
             spring.position.y += spring.velocity.y;
@@ -219,10 +235,24 @@ export default class App extends Component {
 
         });
 
-        this.refs.draggable.state.clientX = springs.tongue.position.x;
-        this.refs.draggable.state.clientY = springs.tongue.position.y;
+        this.xx = this.xx || 1;
+        this.xx++;
+        if( !( this.xx % 13 )  ) {
+            this.setState({ totalEnergy, totalDistance });
+        }
 
-        this.setState({ springs: totalEnergy < 0.01 ? null : springs });
+        const isComplete = totalEnergy < 0.5 && totalDistance < 0.8;
+        const state = { springs };
+
+        if( isComplete ) {
+            this.isPaused = true;
+        }
+
+        this.refs.draggable.state.clientX = springs.tongueSpring.position.x;
+        this.refs.draggable.state.clientY = springs.tongueSpring.position.y;
+
+
+        this.setState( state );
 
     }
 
@@ -230,23 +260,12 @@ export default class App extends Component {
 
         const styles = require('./scss/style.scss');
 
-        const { springs, cat } = this.state;
-        const { background, tongue, snoot, eye1, eye2  } = cat;
-
-        const eye1Pos = {
-            x: springs ? springs.eye1.position.x : eye1.left,
-            y: springs ? springs.eye1.position.y : eye1.top
-        };
-        const eye2Pos = {
-            x: springs ? springs.eye2.position.x : eye2.left,
-            y: springs ? springs.eye2.position.y : eye2.top
-        };
-        const tonguePos = {
-            x: springs ? springs.tongue.position.x : tongue.left,
-            y: springs ? springs.tongue.position.y : tongue.top
-        };
+        const { cat, eye1Spring, eye2Spring, tongueSpring } = this.state;
+        const { background, tongue, eye1, eye2, snoot } = cat;
 
         return <div className={ styles.wrap }>
+            { this.state.totalEnergy }...
+            { this.state.totalDistance }
             <div className={ styles.container }>
 
                 <img
@@ -258,8 +277,8 @@ export default class App extends Component {
                 <Draggable
                     ref="draggable"
                     start={{
-                        x: tonguePos.x,
-                        y: tonguePos.y
+                        x: tongueSpring.position.x,
+                        y: tongueSpring.position.y
                     }}
                     bounds={{
                         left: tongue.left - tongue.relativeMovementBounds.left,
@@ -294,8 +313,8 @@ export default class App extends Component {
                 <div
                     className={ styles.eye }
                     style={{
-                        top: `${ eye1Pos.y }px`,
-                        left: `${ eye1Pos.x }px`,
+                        top: `${ eye1Spring.position.y }px`,
+                        left: `${ eye1Spring.position.x }px`,
                         boxShadow: `0 0 2px ${ eye1.color }`
                     }}
                 />
@@ -303,8 +322,8 @@ export default class App extends Component {
                 <div
                     className={ styles.eye }
                     style={{
-                        top: `${ eye2Pos.y }px`,
-                        left: `${ eye2Pos.x }px`,
+                        top: `${ eye2Spring.position.y }px`,
+                        left: `${ eye2Spring.position.x }px`,
                         boxShadow: `0 0 2px ${ eye2.color }`
                     }}
                 />
