@@ -24,6 +24,8 @@ const cats = [() => ({
         img: require( '../kitty-cat-1-tongue.png' ),
         top: 195,
         left: 282,
+        width: 28,
+        height: 81,
         relativeMovementBounds: {
             left: 5,
             top: 5,
@@ -66,6 +68,8 @@ const cats = [() => ({
         img: require( '../kitty-cat-2-tonue.png' ),
         top: 265,
         left: 267,
+        width: 73,
+        height: 147,
         relativeMovementBounds: {
             left: 2,
             top: 10,
@@ -242,7 +246,7 @@ export default class App extends Component {
         tongueSpring.position.x = boundPosition.left;
         tongueSpring.position.y = boundPosition.top;
 
-        this.setState({ cat });
+        this.setState({ cat, hasDragged: true });
 
     }
 
@@ -404,18 +408,30 @@ export default class App extends Component {
                                 onStop={ this.handleDragEnd }
                                 onStart={ this.handleDragStart }
                             >
-                                <img
+                                <div
                                     onTouchStart={ ( event ) => event.preventDefault() }
                                     onTouchMove={ ( event ) => event.preventDefault() }
                                     draggable={ false }
                                     onDragStart={ ( event ) => false }
-                                    src={ tongue.img }
                                     className={ styles.absolute }
                                     style={{
-                                        cursor: 'pointer'
+                                        backgroundImage: `url( ${ tongue.img } )`,
+                                        cursor: 'pointer',
+                                        height: `${ tongue.height }px`,
+                                        width: `${ tongue.width }px`
                                     }}
                                 />
                             </Draggable>
+
+                            { !this.state.hasDragged && <div
+                                className={ styles.pullMe }
+                                style={{
+                                    top: `${ tongueSpring.position.y + tongue.height - 20 }px`,
+                                    left: `${ tongueSpring.position.x + tongue.width + 20 }px`
+                                }}
+                            >
+                                Pull down &amp; release!
+                            </div> }
 
                             <img
                                 draggable={ false }

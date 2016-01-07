@@ -203,3 +203,28 @@
     background:darken( #3FB8AF, 10% );
     color:lighten( #DAD8A7, 15% );
 }
+
+.pullMe {
+    opacity:0.8;
+    text-shadow:0 0 2px #000;
+    color:#fff;
+    background:darken( #3FB8AF, 1% );
+    padding:10px;
+    font-size:13px;
+    border-radius:4px;
+    position:absolute;
+    z-index:200;
+
+    &:before {
+        position:absolute;
+        display:block;
+        content:'';
+        top:8px;
+        left:-10px;
+        width: 0;
+        height: 0;
+        border-top: 10px solid transparent;
+        border-bottom: 10px solid transparent;
+        border-right:10px solid darken( #3FB8AF, 1% );
+    }
+}
