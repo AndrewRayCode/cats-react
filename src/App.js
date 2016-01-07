@@ -1,12 +1,15 @@
+/*
+ * Based on http://imgur.com/gallery/aHnOPFa
+ */
 import React, { Component } from 'react';
 import Draggable from 'react-draggable';
 
 // Spring formula
-const stiffness = 30;
-const damperFactor = 0.85;
-const nodeMass = 2;
-const velocityMax = 10;
-const springFrictionFactor = 0.97;
+const stiffness = 40; // smaller values mean the spring is looser and will stretch further.
+const damperFactor = 0.04; // Larger values increase the amount of damping so the object will come to rest more quickly.
+const nodeMass = 0.1;
+const velocityMax = 20;
+const springFrictionFactor = 0.91;
 
 // Potential cats
 const cats = [() => ({
@@ -15,31 +18,37 @@ const cats = [() => ({
     },
     tongue: {
         img: require( '../kitty-cat-1-tongue.png' ),
-        top: 203,
+        top: 195,
         left: 282,
         relativeMovementBounds: {
             left: 2,
             top: 5,
             right: 2,
-            bottom: 15
+            bottom: 25
         }
     },
     snoot: {
         img: require('../kitty-cat-1-snoot.png'),
-        top: 187,
-        left: 273
+        top: 168,
+        left: 256
     },
     eye1: {
         top: 169,
         left: 267,
+        height: 10,
+        width: 5,
         travelDistance: 9,
-        color: '#637790'
+        background: '#111521',
+        borderColor: '#637790'
     },
     eye2: {
         top: 169,
         left: 327,
+        height: 10,
+        width: 5,
         travelDistance: 9,
-        color: '#637790'
+        background: '#111521',
+        borderColor: '#637790'
     }
 } ) ];
 
@@ -83,10 +92,10 @@ export default class App extends Component {
 
         super( props );
 
-        this.isPaused = true;
         const myCat = cats[ 0 ]();
 
         this.state = {
+            isPaused: true,
             snootsBooped: parseFloat( localStorage.getItem('boopsSnooted') ) || 0,
             cat: myCat,
             eye1Spring: toSpring( myCat.eye1.left, myCat.eye1.top ),
@@ -115,10 +124,7 @@ export default class App extends Component {
 
     handleDragStart() {
 
-        this.isPaused = true;
-        this.dragging = true;
-
-
+        this.state.isPaused = true;
         this.state.eye1Spring.acceleration = { x: 0, y: 0 };
         this.state.eye1Spring.velocity = { x: 0, y: 0 };
         this.state.eye2Spring.acceleration = { x: 0, y: 0 };
@@ -139,11 +145,11 @@ export default class App extends Component {
             cat.tongue.relativeMovementBounds.bottom
         );
 
-        eye1Spring.position.x = cat.eye1.left + (
+        eye1Spring.position.x = cat.eye1.left - (
             tongueYTravelPercent * cat.eye1.travelDistance
         );
 
-        eye2Spring.position.x = cat.eye2.left - (
+        eye2Spring.position.x = cat.eye2.left + (
             tongueYTravelPercent * cat.eye2.travelDistance
         );
 
@@ -157,9 +163,8 @@ export default class App extends Component {
     handleDragEnd() {
 
         const snootsBooped = this.state.snootsBooped + 1;
-        this.setState({ snootsBooped });
         localStorage.setItem( 'boopsSnooted', snootsBooped );
-        this.isPaused = false;
+        this.setState({ snootsBooped, isPaused: false });
 
     }
 
@@ -169,9 +174,9 @@ export default class App extends Component {
         this.elapsedTime = Date.now() - ( this.lastTimeStamp || 0 );
         this.lastTimestamp = Date.now();
 
-        const animationScale = this.elapsedTime * 0.00000000000001;
+        const timeScale = this.elapsedTime * 0.000000000000001;
 
-        if( this.isPaused ) {
+        if( this.state.isPaused ) {
 
             return;
 
@@ -203,14 +208,18 @@ export default class App extends Component {
 
             totalDistance += distanceFromRest;
 
+            // F = - kx - bv
             // F = -k(|x|-d)(x/|x|) - bv
             const force = {
-                x: -stiffness * distanceFromRest * ( normalVector.x / distanceFromRest ) - damperFactor * spring.velocity.x,
-                y: -stiffness * distanceFromRest * ( normalVector.y / distanceFromRest ) - damperFactor * spring.velocity.y
+                x: -stiffness * distanceFromRest * ( normalVector.x ) - damperFactor * spring.velocity.x,
+                y: -stiffness * distanceFromRest * ( normalVector.y ) - damperFactor * spring.velocity.y
             };
 
-            spring.acceleration.x += animationScale * ( force.x / nodeMass );
-            spring.acceleration.y += animationScale * ( force.y / nodeMass );
+            // block.v += a * frameRate;
+            // block.x += block.v * frameRate;
+
+            spring.acceleration.x = timeScale * ( force.x / nodeMass );
+            spring.acceleration.y = timeScale * ( force.y / nodeMass );
 
         });
 
@@ -224,8 +233,8 @@ export default class App extends Component {
             spring.velocity.x = Math.max( Math.min( spring.velocity.x, velocityMax ), -velocityMax ) * springFrictionFactor;
             spring.velocity.y = Math.max( Math.min( spring.velocity.y, velocityMax ), -velocityMax ) * springFrictionFactor;
 
-            spring.acceleration.x *= 0.5 * animationScale;
-            spring.acceleration.y *= 0.5 * animationScale;
+            //spring.acceleration.x *= 0.9;
+            //spring.acceleration.y *= 0.9;
 
             spring.position.x += spring.velocity.x;
             spring.position.y += spring.velocity.y;
@@ -235,16 +244,16 @@ export default class App extends Component {
         });
 
         const isComplete = totalEnergy < 0.5 && totalDistance < 0.8;
-        const state = { springs };
+        const state = springs;
 
         if( isComplete ) {
-            this.isPaused = true;
+            state.isPaused = true;
         }
 
         this.refs.draggable.state.clientX = springs.tongueSpring.position.x;
         this.refs.draggable.state.clientY = springs.tongueSpring.position.y;
 
-        this.setState( springs );
+        this.setState( state );
 
     }
 
@@ -313,7 +322,10 @@ export default class App extends Component {
                             style={{
                                 top: `${ eye1Spring.position.y }px`,
                                 left: `${ eye1Spring.position.x }px`,
-                                boxShadow: `0 0 2px ${ eye1.color }`
+                                height: `${ eye1.height }px`,
+                                width: `${ eye1.width }px`,
+                                background: `${ eye2.background }`,
+                                boxShadow: `0 0 2px ${ eye1.borderColor }`
                             }}
                         />
 
@@ -322,7 +334,10 @@ export default class App extends Component {
                             style={{
                                 top: `${ eye2Spring.position.y }px`,
                                 left: `${ eye2Spring.position.x }px`,
-                                boxShadow: `0 0 2px ${ eye2.color }`
+                                height: `${ eye1.height }px`,
+                                width: `${ eye1.width }px`,
+                                background: `${ eye2.background }`,
+                                boxShadow: `0 0 2px ${ eye2.borderColor }`
                             }}
                         />
 
