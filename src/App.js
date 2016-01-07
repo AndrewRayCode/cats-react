@@ -406,6 +406,7 @@ export default class App extends Component {
                             >
                                 <img
                                     onTouchStart={ ( event ) => event.preventDefault() }
+                                    onTouchMove={ ( event ) => event.preventDefault() }
                                     draggable={ false }
                                     src={ tongue.img }
                                     className={ styles.noSelect }
