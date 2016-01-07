@@ -28,3 +28,59 @@
     border-radius:50%;
 }
 
+.title {
+    font-family:sans-serif;
+    font-size:48px;
+    letter-spacing:0.2rem;
+    font-weight:bold;
+    text-shadow: 0 1px 0 #9FE7CF,
+        0 2px 0 #8FD7BF,
+        0 3px 0 #7FC7AF,
+        0 6px 1px rgba(0,0,0,.1),
+        0 20px 20px rgba(0,0,0,.15);
+    margin:20px 0 30px;
+    color:#fff;
+    text-align:center;
+}
+
+.snootsBooped {
+    padding:20px;
+    color:#fff;
+    text-shadow:0 0 2px #3F879F;
+    width:500px;
+    margin:0 auto;
+}
+
+.snoots {
+    color:#AFF7DF;
+}
+
+.booped {
+    font-size:22px;
+}
+
+.footer {
+    height:60px;
+    padding:20px;
+    color:#fff;
+    background:#FF9E9D;
+}
+
+.footed {
+    width:500px;
+    margin:0 auto;
+}
+
+.appWrap {
+    height:100%;
+}
+
+.application {
+    min-height:100%;
+    margin-bottom: -100px;
+
+    &:after {
+        content: "";
+        display: block;
+    }
+}
