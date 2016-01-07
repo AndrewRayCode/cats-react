@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import Draggable from 'react-draggable';
 
 // Spring formula
-const stiffness = 2;
-const damperFactor = 0.1;
-const nodeMass = 10;
-const velocityMax = 5;
-const springFrictionFactor = 0.9;
+const stiffness = 10;
+const damperFactor = 0.05;
+const nodeMass = 2;
+const velocityMax = 2;
+const springFrictionFactor = 0.42;
 
 // Potential cats
 const cats = [() => ({
@@ -184,7 +184,7 @@ export default class App extends Component {
             const distanceFromRest = vectorLength2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
-            }) || 0.0000001;
+            }) || 0.0000000000001;
 
             const normalVector = normalizeVector2d({
                 x: spring.position.x - spring.origin.x,
@@ -199,7 +199,7 @@ export default class App extends Component {
                 y: -stiffness * distanceFromRest * ( normalVector.y / distanceFromRest ) - damperFactor * spring.velocity.y
             };
 
-            // force1X = stiffness * ( distance - spring.length ) * ( norm1.x / distance ) + fieldX - damperFactor * v1.x,
+            // force1X = stiffness * ( distance - spring.length ) * ( norm1.x / distance ) - damperFactor * v1.x,
 
             // our node2 is spring. node1 is origin.
             // force to apply to node2:
@@ -219,14 +219,16 @@ export default class App extends Component {
 
             const spring = springs[ key ];
 
-            spring.velocity.x += spring.acceleration.x;
-            spring.velocity.y += spring.acceleration.y;
+            spring.velocity.x = Math.max( Math.min(
+                spring.velocity.x + spring.acceleration.x, velocityMax
+            ), -velocityMax ) * springFrictionFactor;
 
-            spring.velocity.x = Math.max( Math.min( spring.velocity.x, velocityMax ), -velocityMax ) * springFrictionFactor;
-            spring.velocity.y = Math.max( Math.min( spring.velocity.y, velocityMax ), -velocityMax ) * springFrictionFactor;
+            spring.velocity.y = Math.max( Math.min(
+                spring.velocity.y + spring.acceleration.y, velocityMax
+            ), -velocityMax ) * springFrictionFactor;
 
-            spring.acceleration.x *= 0.5 * springFrictionFactor;
-            spring.acceleration.y *= 0.5 * springFrictionFactor;
+            spring.acceleration.x *= 0.5;
+            spring.acceleration.y *= 0.5;
 
             spring.position.x += spring.velocity.x;
             spring.position.y += spring.velocity.y;
@@ -237,7 +239,7 @@ export default class App extends Component {
 
         this.xx = this.xx || 1;
         this.xx++;
-        if( !( this.xx % 13 )  ) {
+        if( !( this.xx % 19 )  ) {
             this.setState({ totalEnergy, totalDistance });
         }
 
@@ -252,7 +254,7 @@ export default class App extends Component {
         this.refs.draggable.state.clientY = springs.tongueSpring.position.y;
 
 
-        this.setState( state );
+        this.setState( springs );
 
     }
 
