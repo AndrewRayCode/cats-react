@@ -2,25 +2,61 @@
 
 .container {
     position:relative;
-}
-
-.wrap {
-    margin:20px auto;
-    width: 500px;
-    height: 375px;
     border-radius:4px;
-    overflow:hidden;
-    background:lighten( #7FC7AF, 10% );
+    background:lighten( #7FC7AF, 10% ) 10px 10px no-repeat;
     border-top:1px solid lighten( #7FC7AF, 20% );
     box-shadow:0 0 10px darken( #3FB8AF, 8% );
     padding:10px;
+    margin:0 auto;
+}
+
+.relative {
+    position:relative;
+}
+
+.imageWrap {
+    width:600px;
+    margin:20px auto;
 }
 
 .image {
-    position:absolute;
+    position:relative;
+}
+
+.imageCredit {
+    opacity:0.8;
+    color:lighten( #7FC7AF, 10% );
+    margin:15px 0 0;
+    text-align:center;
+    font-size:12px;
+    font-style:italic;
+}
+
+.imageLink {
+    color:lighten( #7FC7AF, 20% );
+    text-decoration:underline;
+}
+
+.absolute {
+    position: absolute;
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select:none;
+}
+
+.noSeelct {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select:none;
 }
 
 .eye {
+    -moz-user-select: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select:none;
     position:absolute;
     opacity:0.8;
     border-radius:50%;
@@ -42,10 +78,11 @@
 }
 
 .snootsBooped {
+    text-align:center;
     padding:20px;
     color:#fff;
     text-shadow:0 0 2px #3F879F;
-    width:500px;
+    width:600px;
     margin:0 auto;
 }
 
@@ -67,7 +104,8 @@
 }
 
 .footed {
-    width:500px;
+    width:600px;
+    text-align:center;
     margin:0 auto;
 }
 
@@ -83,4 +121,82 @@
         content: "";
         display: block;
     }
+}
+
+.donateButton {
+    border:0 none;
+    background:#FF3D7F;
+    color:#fff;
+    padding:4px 8px;
+    box-shadow:0 -2px 8px darken( #3FB8AF, 8% );
+    font-size:14px;
+    display:inline-block;
+    border-radius:4px;
+    cursor:pointer;
+    border:none;
+    border-top:1px solid lighten( #FF3D7F, 10% );
+    text-shadow:0 0 2px darken( #FF3D7F, 80% );
+    margin:0 20px;
+}
+
+.btcIcon {
+    border-radius:20px;
+    height:16px;
+    width:12px;
+    border:1px solid lighten( #DAD8A7, 20% );
+    background:darken( #FF9E9D, 5% );
+    padding:3px 6px;
+    vertical-align: middle;
+    box-shadow:0 0 2px #000;
+    text-shadow:0 0 2px #000;
+}
+
+.footSnoot {
+    color:darken( #AFF7DF, 70% );
+}
+
+.footLink {
+    color:darken( #FF3D7F, 20% );
+    margin:0 10px;
+}
+
+.pre {
+    display:inline-block;
+    background:#fff;
+    padding:2px 8px;
+    border-radius:4px;
+}
+
+.header {
+    text-align:center;
+}
+
+.catSelector {
+    border-top:1px solid lighten( #3FB8AF, 5% );
+    box-shadow:0 2px 4px darken( #3FB8AF, 10% );
+    display:inline-block;
+    margin:10px auto;
+    padding:0;
+    overflow:hidden;
+    border-radius:4px;
+    cursor:pointer;
+}
+
+.catSelect {
+    color:lighten( #DAD8A7, 10% );
+    margin:0;
+    padding:10px 20px;
+    display:inline-block;
+    background:darken( #3FB8AF, 20% );
+    font-size:14px;
+    list-style:none;
+
+    &:hover {
+        background:darken( #3FB8AF, 10% );
+    }
+}
+
+.selected {
+    background:darken( #3FB8AF, 10% );
+    color:lighten( #DAD8A7, 15% );
 }
