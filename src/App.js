@@ -87,7 +87,7 @@ export default class App extends Component {
         const myCat = cats[ 0 ]();
 
         this.state = {
-            snootsBooped: localStorage.getItem('boopsSnooted') || 0,
+            snootsBooped: parseFloat( localStorage.getItem('boopsSnooted') ) || 0,
             cat: myCat,
             eye1Spring: toSpring( myCat.eye1.left, myCat.eye1.top ),
             eye2Spring: toSpring( myCat.eye2.left, myCat.eye2.top ),
@@ -156,10 +156,9 @@ export default class App extends Component {
 
     handleDragEnd() {
 
-        this.setState({
-            snootsBooped: this.state.snootsBooped + 1
-        });
- //localStorage.getItem('boopsSnooted') || 0,
+        const snootsBooped = this.state.snootsBooped + 1;
+        this.setState({ snootsBooped });
+        localStorage.setItem( 'boopsSnooted', snootsBooped );
         this.isPaused = false;
 
     }
