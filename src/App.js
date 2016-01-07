@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import Draggable from 'react-draggable';
 
 // Spring formula
-const stiffness = 10;
-const damperFactor = 0.05;
+const stiffness = 30;
+const damperFactor = 0.85;
 const nodeMass = 2;
-const velocityMax = 2;
-const springFrictionFactor = 0.42;
+const velocityMax = 10;
+const springFrictionFactor = 0.97;
 
 // Potential cats
 const cats = [() => ({
@@ -32,13 +32,13 @@ const cats = [() => ({
     eye1: {
         top: 169,
         left: 267,
-        travelDistance: 5,
+        travelDistance: 7,
         color: '#637790'
     },
     eye2: {
         top: 169,
         left: 327,
-        travelDistance: 5,
+        travelDistance: 7,
         color: '#637790'
     }
 } ) ];
@@ -54,7 +54,9 @@ function normalizeVector2d( vector ) {
     const length = vectorLength2d( vector );
 
     if( !length ) {
+
         return { x: 0, y: 0 };
+
     }
 
     return {
@@ -160,6 +162,10 @@ export default class App extends Component {
     onAnimate() {
 
         this.animationId = window.requestAnimationFrame( this.onAnimate );
+        this.elapsedTime = Date.now() - ( this.lastTimeStamp || 0 );
+        this.lastTimestamp = Date.now();
+
+        const animationScale = this.elapsedTime * 0.00000000000001;
 
         if( this.isPaused ) {
 
@@ -184,7 +190,7 @@ export default class App extends Component {
             const distanceFromRest = vectorLength2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
-            }) || 0.0000000000001;
+            }) || 0.00000001;
 
             const normalVector = normalizeVector2d({
                 x: spring.position.x - spring.origin.x,
@@ -199,6 +205,9 @@ export default class App extends Component {
                 y: -stiffness * distanceFromRest * ( normalVector.y / distanceFromRest ) - damperFactor * spring.velocity.y
             };
 
+            spring.acceleration.x += animationScale * ( force.x / nodeMass );
+            spring.acceleration.y += animationScale * ( force.y / nodeMass );
+
             // force1X = stiffness * ( distance - spring.length ) * ( norm1.x / distance ) - damperFactor * v1.x,
 
             // our node2 is spring. node1 is origin.
@@ -208,10 +217,41 @@ export default class App extends Component {
             // b = coefficient of dampening
             // d = desired distance of separation
             
-            spring.acceleration = {
-                x: spring.acceleration.x + force.x / nodeMass,
-                y: spring.acceleration.y + force.y / nodeMass
-            };
+            //var a = ( F_spring + F_damper ) / block.mass;
+            //block.v += a * frameRate;
+            //block.x += block.v * frameRate;
+
+            //spring.velocity = {
+                //x: spring.velocity.x + Math.max( Math.min(
+                    //force.x / nodeMass, velocityMax
+                //), -velocityMax ) * springFrictionFactor * ( 1 / 60 ),
+                //y: spring.velocity.y + Math.max( Math.min(
+                    //force.y / nodeMass, velocityMax
+                //), -velocityMax ) * springFrictionFactor * ( 1 / 60 )
+            //};
+
+            //totalEnergy += Math.abs( spring.velocity.x ) + Math.abs( spring.velocity.y );
+
+            //spring.position.x += spring.velocity.x * ( 1 / 60 );
+            //spring.position.y += spring.velocity.y * ( 1 / 60 );
+
+
+
+
+            //var F_spring = k * ( (block.x - wall.x) - spring_length );
+            //var F_damper = b * ( block.v - wall.v );
+
+            //var a = ( F_spring + F_damper ) / block.mass;
+            //block.v += a * frameRate;
+            //block.x += block.v * frameRate;
+
+
+            //var F_spring = stiffness * distanceFromRest;
+            //var F_damper = damperFactor * spring.velocity.x;
+
+            //var a = ( F_spring + F_damper ) / nodeMass;
+            //spring.velocity.x += a * ( 1 / 60 );
+            //spring.position.x += spring.velocity.x * ( 1 / 60 );
 
         });
 
@@ -219,16 +259,14 @@ export default class App extends Component {
 
             const spring = springs[ key ];
 
-            spring.velocity.x = Math.max( Math.min(
-                spring.velocity.x + spring.acceleration.x, velocityMax
-            ), -velocityMax ) * springFrictionFactor;
+            spring.velocity.x += spring.acceleration.x;
+            spring.velocity.y += spring.acceleration.y;
 
-            spring.velocity.y = Math.max( Math.min(
-                spring.velocity.y + spring.acceleration.y, velocityMax
-            ), -velocityMax ) * springFrictionFactor;
+            spring.velocity.x = Math.max( Math.min( spring.velocity.x, velocityMax ), -velocityMax ) * springFrictionFactor;
+            spring.velocity.y = Math.max( Math.min( spring.velocity.y, velocityMax ), -velocityMax ) * springFrictionFactor;
 
-            spring.acceleration.x *= 0.5;
-            spring.acceleration.y *= 0.5;
+            spring.acceleration.x *= 0.5 * animationScale;
+            spring.acceleration.y *= 0.5 * animationScale;
 
             spring.position.x += spring.velocity.x;
             spring.position.y += spring.velocity.y;
