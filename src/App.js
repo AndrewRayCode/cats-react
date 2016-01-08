@@ -535,10 +535,6 @@ export default class App extends Component {
                         >
 
                             <div
-                                onTouchStart={ ( event ) => event.preventDefault() }
-                                onTouchMove={ ( event ) => event.preventDefault() }
-                                draggable={ false }
-                                onDragStart={ ( event ) => false }
                                 className={ styles.absolute }
                                 style={{
                                     left: tongueSpring.position.x,
@@ -613,13 +609,18 @@ export default class App extends Component {
                                 onStart={ this.handleDragStart }
                                 zIndex={ 200 }
                             >
-                                <div style={{
-                                    zIndex: 200,
-                                    background: 'transparent',
-                                    cursor: 'pointer',
-                                    height: `${ tongue.height }px`,
-                                    width: `${ tongue.width }px`
-                                }} />
+                                <div
+                                    onTouchStart={ ( event ) => event.preventDefault() }
+                                    onTouchMove={ ( event ) => event.preventDefault() }
+                                    draggable={ false }
+                                    onDragStart={ ( event ) => false }
+                                    style={{
+                                        zIndex: 200,
+                                        background: 'transparent',
+                                        cursor: 'pointer',
+                                        height: `${ tongue.height }px`,
+                                        width: `${ tongue.width }px`
+                                    }} />
                             </Draggable>
 
                         </div>
