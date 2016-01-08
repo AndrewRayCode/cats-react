@@ -51,8 +51,8 @@ const cats = [() => ({
         left: 197,
         height: 31,
         width: 20,
-        growAmount: 13,
-        travelDistance: 32,
+        growAmount: 15,
+        travelDistance: 28,
         background: '#0b1413',
         borderColor: '#141f19'
     },
@@ -501,9 +501,6 @@ export default class App extends Component {
                         Booper Snooter v0.2
                     </h1>
 
-                    <div className={ styles.snoots }>
-                        Pick a derp and pull its tongue!
-                    </div>
                     <ul className={ styles.catSelector }>
                         { staticCats.map( ( staticCat, index ) => {
                             return <li
