@@ -497,9 +497,21 @@ export default class App extends Component {
                     >
                         Andrew Ray
                     </a>
-                    { this.state.showBitcoinAddress ? <pre className={ styles.pre }>
-                        1FsEF4v5vGHiNAgwSBMzBFvbScP96fgohJ
-                    </pre> : <button
+                    { this.state.showBitcoinAddress ? <div className={ styles.coinWrap }>
+                        <img
+                            className={ styles.qrCode }
+                            src={ require('../my-qr-code.png') }
+                        />
+                        <pre className={ styles.pre }>
+                            1FsEF4v5vGHiNAgwSBMzBFvbScP96fgohJ
+                        </pre>
+                        <a
+                            className={ styles.footLink }
+                            onClick={ this.showBitcoinAddress }
+                        >
+                            (Close)
+                        </a>
+                    </div> : <button
                         onClick={ this.showBitcoinAddress }
                         className={ styles.donateButton }
                     >

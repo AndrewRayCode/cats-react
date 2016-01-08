@@ -163,6 +163,18 @@
     margin:0 10px;
 }
 
+.coinWrap {
+    position:relative;
+    display:inline-block;
+}
+
+.qrCode {
+    position:absolute;
+    bottom:50px;
+    left:50%;
+    margin-left:-85px;
+}
+
 .pre {
     display:inline-block;
     background:#fff;
