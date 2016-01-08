@@ -1,15 +1,23 @@
 /*
+ * Author: Andrew Ray http://andrewray.me
+ * License: https://opensource.org/licenses/MIT
+ * Description: Grab a cat's tongue and drag it for mindless fun.
+ *
  * Based on http://imgur.com/gallery/aHnOPFa
  */
 import React, { Component } from 'react';
+import ReactDOM from 'react-dom';
 import Draggable from 'react-draggable';
 
 // Spring formula
 const stiffness = 40; // smaller values mean the spring is looser and will stretch further.
-const damperFactor = 0.04; // Larger values increase the amount of damping so the object will come to rest more quickly.
+const damperFactor = 0.01; // Larger values increase the amount of damping so the object will come to rest more quickly.
 const nodeMass = 0.1;
 const velocityMax = 20;
 const springFrictionFactor = 0.91;
+
+// Multiplier for eyes to follow mouse
+const eyeFollowFactor = 0.01;
 
 // Potential cats
 const cats = [() => ({
@@ -43,6 +51,7 @@ const cats = [() => ({
         left: 267,
         height: 10,
         width: 5,
+        growAmount: 3,
         travelDistance: 9,
         background: '#111521',
         borderColor: '#637790'
@@ -52,6 +61,7 @@ const cats = [() => ({
         left: 327,
         height: 10,
         width: 5,
+        growAmount: 3,
         travelDistance: 9,
         background: '#111521',
         borderColor: '#637790'
@@ -87,7 +97,8 @@ const cats = [() => ({
         left: 197,
         height: 31,
         width: 20,
-        travelDistance: 25,
+        growAmount: 13,
+        travelDistance: 32,
         background: '#0b1413',
         borderColor: '#141f19'
     },
@@ -96,14 +107,18 @@ const cats = [() => ({
         left: 397,
         height: 31,
         width: 20,
-        travelDistance: 25,
+        growAmount: 13,
+        travelDistance: 22,
         background: '#0b1413',
         borderColor: '#141f19'
     }
 } ) ];
 
+// Copy the cats into a static array of data
 const staticCats = cats.map( ( cat ) => cat() );
 
+// Given a current position (vector2d), and a center and a bounds limit,
+// constrain the position to be within the center + bounds limit
 function boundPositionTo( position, originalPosition, bounds ) {
 
     return {
@@ -113,12 +128,14 @@ function boundPositionTo( position, originalPosition, bounds ) {
 
 }
 
+// Return the length of a vector
 function vectorLength2d( vector ) {
 
     return Math.sqrt( vector.x * vector.x + vector.y * vector.y );
 
 }
 
+// Return a normalized vector, or a 0 length vector
 function normalizeVector2d( vector ) {
 
     const length = vectorLength2d( vector );
@@ -136,6 +153,7 @@ function normalizeVector2d( vector ) {
 
 }
 
+// Create runtime spring data from a cat section
 function toSpring( x1, y1 ) {
 
     return {
@@ -147,14 +165,19 @@ function toSpring( x1, y1 ) {
 
 }
 
+// Create the state object for a new cat
 function getStateFromIndex( catIndex ) {
 
     const myCat = cats[ catIndex ]();
 
     return {
         isPaused: true,
+        mouse: { x: 0, y: 0 },
         catIndex,
         cat: myCat,
+        percentDistance: 0,
+        eye1Offset: { x: 0, y: 0 },
+        eye2Offset: { x: 0, y: 0 },
         eye1Spring: toSpring( myCat.eye1.left, myCat.eye1.top ),
         eye2Spring: toSpring( myCat.eye2.left, myCat.eye2.top ),
         tongueSpring: toSpring( myCat.tongue.left, myCat.tongue.top )
@@ -169,7 +192,7 @@ export default class App extends Component {
         super( props );
 
         const state = getStateFromIndex( 1 );
-        state.snootsBooped = parseFloat( localStorage.getItem('boopsSnooted') ) || 0;
+        state.snootsBooped = parseFloat( localStorage.getItem( 'boopsSnooted' ) ) || 0;
 
         this.state = state;
 
@@ -179,24 +202,38 @@ export default class App extends Component {
         this.handleDragStart = this.handleDragStart.bind( this );
         this.showBitcoinAddress = this.showBitcoinAddress.bind( this );
         this.selectCat = this.selectCat.bind( this );
+        this.onMouseMove = this.onMouseMove.bind( this );
 
     }
 
     componentDidMount() {
 
         this.animationId = window.requestAnimationFrame( this.onAnimate );
+        document.body.addEventListener( 'mousemove', this.onMouseMove );
 
     }
 
     componentWillUnmount() {
 
         window.cancelAnimationFrame( this.animationId );
+        document.body.removeEventListener( 'mousemove', this.onMouseMove );
 
     }
 
     showBitcoinAddress() {
 
         this.setState({ showBitcoinAddress: !this.state.showBitcoinAddress });
+
+    }
+
+    onMouseMove( event ) {
+
+        this.setState({
+            mouse: {
+                x: event.clientX,
+                y: event.clientY
+            }
+        });
 
     }
 
@@ -210,6 +247,7 @@ export default class App extends Component {
 
     handleDragStart() {
 
+        // This is bad but quick. Mutate state object and re-set it
         this.state.isPaused = true;
         this.state.eye1Spring.acceleration = { x: 0, y: 0 };
         this.state.eye1Spring.velocity = { x: 0, y: 0 };
@@ -221,10 +259,15 @@ export default class App extends Component {
 
     }
 
+    // When dragging, calculate the position of the eyes and the tongue
     handleDrag( event, ui ) {
 
         const { eye1Spring, eye2Spring, tongueSpring, cat } = this.state;
 
+        // react-draggable is terrible. Don't use it. We have to re-constrain
+        // the ui position even though we've set a dragging bounds. Without
+        // this, the ui position can be reported outside the bounds, meaning
+        // the tongue can be dragged outside of the mouth
         const boundPosition = boundPositionTo(
             ui.position, cat.tongue, cat.tongue.relativeMovementBounds
         );
@@ -235,10 +278,11 @@ export default class App extends Component {
             cat.tongue.relativeMovementBounds.bottom
         );
 
+        // Calculate the position of the eyes relative to how far we've dragged
+        // the tongue
         eye1Spring.position.x = cat.eye1.left - (
             tongueYTravelPercent * cat.eye1.travelDistance
         );
-
         eye2Spring.position.x = cat.eye2.left + (
             tongueYTravelPercent * cat.eye2.travelDistance
         );
@@ -246,15 +290,26 @@ export default class App extends Component {
         tongueSpring.position.x = boundPosition.left;
         tongueSpring.position.y = boundPosition.top;
 
-        this.setState({ cat, hasDragged: true });
+        this.setState({
+            cat,
+            hasDragged: true,
+            isDragging: true,
+            percentDistance: tongueYTravelPercent
+        });
 
     }
 
+    // On drag release, update counter and unpause so spring simulation can
+    // start
     handleDragEnd() {
 
         const snootsBooped = this.state.snootsBooped + 1;
         localStorage.setItem( 'boopsSnooted', snootsBooped );
-        this.setState({ snootsBooped, isPaused: false });
+        this.setState({
+            snootsBooped,
+            isPaused: false,
+            isDragging: false
+        });
 
     }
 
@@ -264,23 +319,52 @@ export default class App extends Component {
         this.elapsedTime = Date.now() - ( this.lastTimeStamp || 0 );
         this.lastTimestamp = Date.now();
 
+        // Scale our animations/forces by how much time has elapsed between
+        // frames to account for any variance in framerates
         const timeScale = this.elapsedTime * 0.000000000000001;
 
-        if( this.state.isPaused ) {
+        const { isPaused, eye1Spring, eye2Spring, tongueSpring, mouse, cat, isDragging } = this.state;
+        const springs = { eye1Spring, eye2Spring, tongueSpring };
+        const tongue = this.state.cat.tongue;
+
+        // How far has the tongue travelled?
+        const percentDistance = ( tongueSpring.position.y - tongue.top ) / (
+            tongue.relativeMovementBounds.top + tongue.relativeMovementBounds.bottom
+        );
+
+        // Calculate the eye mouse follow. These are offsets that are added in
+        // the render function. We divide / 20 as a dumb way to estimate pupils
+        // staying inside the iris
+        const bounds = ReactDOM.findDOMNode( this.refs.boundingBox ).getBoundingClientRect();
+        const eye1Offset = {
+            x: ( ( mouse.x - bounds.left ) - cat.eye1.left ) * eyeFollowFactor * ( cat.eye1.travelDistance / 20 ),
+            y: ( ( mouse.y - bounds.top ) - cat.eye1.top ) * eyeFollowFactor * ( cat.eye2.travelDistance / 20 )
+        };
+        const eye2Offset = {
+            x: ( ( mouse.x - bounds.left ) - cat.eye2.left ) * eyeFollowFactor,
+            y: ( ( mouse.y - bounds.top ) - cat.eye2.top ) * eyeFollowFactor
+        };
+
+        if( isPaused ) {
+
+            // if we're dragging the positions are updated by the drag function
+            // otherwise update them here in each animation frame. this is not
+            // ideal because responsibility for updating motion is in two
+            // functions, but this is also a cat tongue simulator.
+            if( !isDragging ) {
+
+                this.setState({ percentDistance, eye1Offset, eye2Offset });
+
+            }
 
             return;
 
         }
-
-        const springs = {
-            eye1Spring: this.state.eye1Spring,
-            eye2Spring: this.state.eye2Spring,
-            tongueSpring: this.state.tongueSpring
-        };
  
         let totalEnergy = 0;
         let totalDistance = 0;
 
+        // Calculate all the forces for each spring...
         Object.keys( springs ).forEach( ( key ) => {
 
             const spring = springs[ key ];
@@ -289,6 +373,10 @@ export default class App extends Component {
             const distanceFromRest = vectorLength2d({
                 x: spring.position.x - spring.origin.x,
                 y: spring.position.y - spring.origin.y
+
+            // If this spring is at rest, distance will be 0, and dividng by
+            // 0 causes NaN which breaks everything, so default to some really
+            // small value
             }) || 0.00000001;
 
             const normalVector = normalizeVector2d({
@@ -309,6 +397,11 @@ export default class App extends Component {
 
         });
 
+        // Then update all the spring positions. Technically this could be done
+        // in the above loop because each spring is attached to a fixed point.
+        // HOWEVER if we ever attach springs to other springs, then this loop
+        // would be neccessary, where you update all forces, then update all
+        // positions
         Object.keys( springs ).forEach( ( key ) => {
 
             const spring = springs[ key ];
@@ -328,6 +421,9 @@ export default class App extends Component {
 
         const isComplete = totalEnergy < 0.4 && totalDistance < 0.7;
         const state = springs;
+        state.percentDistance = percentDistance;
+        state.eye1Offset = eye1Offset;
+        state.eye2Offset = eye2Offset;
 
         if( isComplete ) {
             state.isPaused = true;
@@ -344,7 +440,10 @@ export default class App extends Component {
 
         const styles = require('./scss/style.scss');
 
-        const { cat, eye1Spring, eye2Spring, tongueSpring, catIndex } = this.state;
+        const {
+            cat, eye1Spring, eye2Spring, tongueSpring, catIndex,
+            percentDistance, eye1Offset, eye2Offset
+        } = this.state;
         const { background, tongue, eye1, eye2, snoot } = cat;
 
         return <div className={ styles.appWrap }>
@@ -353,7 +452,7 @@ export default class App extends Component {
                 <div className={ styles.header }>
 
                     <h1 className={ styles.title }>
-                        Booper Snooter v0.1
+                        Booper Snooter v0.2
                     </h1>
 
                     <div className={ styles.snoots }>
@@ -384,6 +483,7 @@ export default class App extends Component {
                     >
 
                         <div
+                            ref="boundingBox"
                             className={ styles.relative }
                             style={{
                                 height: `${ cat.height }px`,
@@ -391,37 +491,21 @@ export default class App extends Component {
                             }}
                         >
 
-                            <Draggable
-                                ref="draggable"
-                                key={ cat.name }
-                                start={{
-                                    x: tongueSpring.position.x,
-                                    y: tongueSpring.position.y
+                            <div
+                                onTouchStart={ ( event ) => event.preventDefault() }
+                                onTouchMove={ ( event ) => event.preventDefault() }
+                                draggable={ false }
+                                onDragStart={ ( event ) => false }
+                                className={ styles.absolute }
+                                style={{
+                                    left: tongueSpring.position.x,
+                                    top: tongueSpring.position.y,
+                                    backgroundImage: `url( ${ tongue.img } )`,
+                                    cursor: 'pointer',
+                                    height: `${ tongue.height }px`,
+                                    width: `${ tongue.width }px`
                                 }}
-                                bounds={{
-                                    left: tongue.left - tongue.relativeMovementBounds.left,
-                                    top: tongue.top - tongue.relativeMovementBounds.top,
-                                    right: tongue.left + tongue.relativeMovementBounds.right,
-                                    bottom: tongue.top + tongue.relativeMovementBounds.bottom
-                                }}
-                                onDrag={ this.handleDrag }
-                                onStop={ this.handleDragEnd }
-                                onStart={ this.handleDragStart }
-                            >
-                                <div
-                                    onTouchStart={ ( event ) => event.preventDefault() }
-                                    onTouchMove={ ( event ) => event.preventDefault() }
-                                    draggable={ false }
-                                    onDragStart={ ( event ) => false }
-                                    className={ styles.absolute }
-                                    style={{
-                                        backgroundImage: `url( ${ tongue.img } )`,
-                                        cursor: 'pointer',
-                                        height: `${ tongue.height }px`,
-                                        width: `${ tongue.width }px`
-                                    }}
-                                />
-                            </Draggable>
+                            />
 
                             { !this.state.hasDragged && <div
                                 className={ styles.pullMe }
@@ -447,26 +531,53 @@ export default class App extends Component {
                             <div
                                 className={ styles.eye }
                                 style={{
-                                    top: `${ eye1Spring.position.y }px`,
-                                    left: `${ eye1Spring.position.x }px`,
-                                    height: `${ eye1.height }px`,
-                                    width: `${ eye1.width }px`,
+                                    top: `${ eye1Spring.position.y - ( percentDistance * eye2.growAmount * 0.5 ) + eye1Offset.y }px`,
+                                    left: `${ eye1Spring.position.x + ( percentDistance * eye2.growAmount * 0.5 ) + eye1Offset.x }px`,
+                                    height: `${ eye1.height + ( percentDistance * eye1.growAmount ) }px`,
+                                    width: `${ eye1.width + ( percentDistance * eye1.growAmount ) }px`,
                                     background: `${ eye2.background }`,
-                                    boxShadow: `0 0 2px ${ eye1.borderColor }`
+                                    boxShadow: `0 0 4px ${ eye1.borderColor }`
                                 }}
                             />
 
                             <div
                                 className={ styles.eye }
                                 style={{
-                                    top: `${ eye2Spring.position.y }px`,
-                                    left: `${ eye2Spring.position.x }px`,
-                                    height: `${ eye1.height }px`,
-                                    width: `${ eye1.width }px`,
+                                    top: `${ eye2Spring.position.y - ( percentDistance * eye2.growAmount * 0.5 ) + eye1Offset.y }px`,
+                                    left: `${ eye2Spring.position.x - ( percentDistance * eye2.growAmount * 0.5 ) + eye1Offset.x }px`,
+                                    height: `${ eye2.height + ( percentDistance * eye2.growAmount ) }px`,
+                                    width: `${ eye2.width + ( percentDistance * eye2.growAmount ) }px`,
                                     background: `${ eye2.background }`,
-                                    boxShadow: `0 0 2px ${ eye2.borderColor }`
+                                    boxShadow: `0 0 4px ${ eye2.borderColor }`
                                 }}
                             />
+
+                            <Draggable
+                                ref="draggable"
+                                key={ cat.name }
+                                start={{
+                                    x: tongueSpring.position.x,
+                                    y: tongueSpring.position.y
+                                }}
+                                bounds={{
+                                    left: tongue.left - tongue.relativeMovementBounds.left,
+                                    top: tongue.top - tongue.relativeMovementBounds.top,
+                                    right: tongue.left + tongue.relativeMovementBounds.right,
+                                    bottom: tongue.top + tongue.relativeMovementBounds.bottom
+                                }}
+                                onDrag={ this.handleDrag }
+                                onStop={ this.handleDragEnd }
+                                onStart={ this.handleDragStart }
+                                zIndex={ 200 }
+                            >
+                                <div style={{
+                                    zIndex: 200,
+                                    background: 'transparent',
+                                    cursor: 'pointer',
+                                    height: `${ tongue.height }px`,
+                                    width: `${ tongue.width }px`
+                                }} />
+                            </Draggable>
 
                         </div>
 
