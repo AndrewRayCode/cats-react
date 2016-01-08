@@ -21,6 +21,52 @@ const eyeFollowFactor = 0.01;
 
 // Potential cats
 const cats = [() => ({
+    height: 495,
+    width: 660,
+    name: 'Dorf',
+    source: 'http://www.cutestpaw.com/images/derpy-cat-2/',
+    background: {
+        img: require( '../kitty-cat-2.jpg' )
+    },
+    tongue: {
+        img: require( '../kitty-cat-2-tonue.png' ),
+        top: 265,
+        left: 267,
+        width: 73,
+        height: 147,
+        relativeMovementBounds: {
+            left: 2,
+            top: 10,
+            right: 2,
+            bottom: 65
+        }
+    },
+    snoot: {
+        img: require('../kitty-cat-2-snoot.png'),
+        top: 225,
+        left: 114
+    },
+    eye1: {
+        top: 220,
+        left: 197,
+        height: 31,
+        width: 20,
+        growAmount: 13,
+        travelDistance: 32,
+        background: '#0b1413',
+        borderColor: '#141f19'
+    },
+    eye2: {
+        top: 229,
+        left: 397,
+        height: 31,
+        width: 20,
+        growAmount: 13,
+        travelDistance: 22,
+        background: '#0b1413',
+        borderColor: '#141f19'
+    }
+} ), () => ({
     height: 375,
     width: 500,
     name: 'Captain Fluff\'n\'Stuff',
@@ -67,51 +113,51 @@ const cats = [() => ({
         borderColor: '#637790'
     }
 } ), () => ({
-    height: 495,
-    width: 660,
-    name: 'Dorf',
-    source: 'http://www.cutestpaw.com/images/derpy-cat-2/',
-    background: {
-        img: require( '../kitty-cat-2.jpg' )
-    },
-    tongue: {
-        img: require( '../kitty-cat-2-tonue.png' ),
-        top: 265,
-        left: 267,
-        width: 73,
-        height: 147,
-        relativeMovementBounds: {
-            left: 2,
-            top: 10,
-            right: 2,
-            bottom: 65
+        height: 495,
+        width: 660,
+        name: 'Grumpy Cat',
+        source: 'http://brooklynfarmgirl.com/2014/04/02/happy-birthday-grumpy-cat/',
+        background: {
+            img: require( '../grumpy-cat.jpg' )
+        },
+        tongue: {
+            img: require( '../grumpy-cat-tongue.png' ),
+            top: 235,
+            left: 380,
+            width: 48,
+            height: 98,
+            relativeMovementBounds: {
+                left: 2,
+                top: 10,
+                right: 2,
+                bottom: 65
+            }
+        },
+        snoot: {
+            img: require('../grumpy-cat-snoot.png'),
+            top: 197,
+            left: 363
+        },
+        eye1: {
+            top: 245,
+            left: 362,
+            height: 16,
+            width: 7,
+            growAmount: 8,
+            travelDistance: 18,
+            background: '#231e1b',
+            borderColor: '#47443f'
+        },
+        eye2: {
+            top: 241,
+            left: 483,
+            height: 16,
+            width: 7,
+            growAmount: 5,
+            travelDistance: 18,
+            background: '#231e1b',
+            borderColor: '#47443f'
         }
-    },
-    snoot: {
-        img: require('../kitty-cat-2-snoot.png'),
-        top: 225,
-        left: 114
-    },
-    eye1: {
-        top: 220,
-        left: 197,
-        height: 31,
-        width: 20,
-        growAmount: 13,
-        travelDistance: 32,
-        background: '#0b1413',
-        borderColor: '#141f19'
-    },
-    eye2: {
-        top: 229,
-        left: 397,
-        height: 31,
-        width: 20,
-        growAmount: 13,
-        travelDistance: 22,
-        background: '#0b1413',
-        borderColor: '#141f19'
-    }
 } ) ];
 
 // Copy the cats into a static array of data
@@ -191,7 +237,7 @@ export default class App extends Component {
 
         super( props );
 
-        const state = getStateFromIndex( 1 );
+        const state = getStateFromIndex( 2 );
         state.snootsBooped = parseFloat( localStorage.getItem( 'boopsSnooted' ) ) || 0;
 
         this.state = state;
